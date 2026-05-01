@@ -1,0 +1,175 @@
+# CI pipeline — runs on every push to main and on every pull request.
+# All jobs must pass before a PR can be merged (enforce via branch protection).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same branch/PR to save minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Lint ────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-lint-${{ runner.os }}-3.12-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: poetry-lint-${{ runner.os }}-3.12-
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==2.1.3
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Ruff — check for errors
+        run: poetry run ruff check --select=E9,F63,F7,F82 .
+
+      - name: Ruff — full lint (warnings only)
+        run: poetry run ruff check --exit-zero --statistics .
+
+      - name: Ruff — format check
+        run: poetry run ruff format --check .
+
+      - name: Mypy — static type check
+        run: poetry run mypy src/pyfian
+
+  # ── 2. Unit tests (matrix) ────────────────────────────────────────────────
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==2.1.3
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run tests with coverage
+        run: poetry run pytest --cov=pyfian --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage report
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+
+  # ── 3. Doctests ───────────────────────────────────────────────────────────
+  doctest:
+    name: Doctests
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-3.12-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-3.12-
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==2.1.3
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Run doctests
+        run: poetry run pytest --doctest-modules src/pyfian
+
+  # ── 4. Build docs (validate only — deploy happens separately) ─────────────
+  build-docs:
+    name: Build Sphinx docs
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache Poetry virtualenvs
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: poetry-${{ runner.os }}-3.12-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: poetry-${{ runner.os }}-3.12-
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==2.1.3
+          poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Build Sphinx docs
+        run: poetry run sphinx-build -W docs/source docs/_build
+
+      - name: Upload built docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-${{ github.sha }}
+          path: docs/_build
+          retention-days: 7

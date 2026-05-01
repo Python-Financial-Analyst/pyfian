@@ -1,0 +1,15 @@
+# CODEOWNERS
+# Defines default reviewers for pull requests.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+*                               @pabloorazi
+
+# GitHub Actions / CI configuration requires a second maintainer review
+.github/                        @pabloorazi
+
+# Core library — both maintainers must approve changes to the public API
+src/pyfian/                     @pabloorazi
+
+# Documentation
+docs/                           @pabloorazi
