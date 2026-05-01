@@ -3284,7 +3284,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
         yield_calculation_convention: str | None = None,
         current_ref_rate: float | None = None,
         ref_rate_curve: YieldCurveBase | None = None,
-    ) -> None:
+    ) -> plt.Figure:
         """
         Visualize the cash flow schedule using matplotlib as stacked bars.
 

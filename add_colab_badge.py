@@ -74,18 +74,18 @@ def update_notebook(path, repo_root):
     if cells and cells[0].cell_type == "markdown":
         if "colab-badge.svg" in cells[0].source:
             if cells[0].source.strip() != expected:
-                print(f"🔄 Replacing outdated badge in: {rel_path}")
+                print(f"Replacing outdated badge in: {rel_path}")
                 cells[0].source = expected
             else:
-                print(f"✅ Badge already correct in: {rel_path}")
+                print(f"Badge already correct in: {rel_path}")
                 return
         else:
             # No badge, insert at the top
-            print(f"➕ Inserting badge into: {rel_path}")
+            print(f"Inserting badge into: {rel_path}")
             cells.insert(0, nbformat.v4.new_markdown_cell(expected))
     else:
         # No cells or first cell isn't markdown
-        print(f"➕ Inserting badge into: {rel_path}")
+        print(f"Inserting badge into: {rel_path}")
         cells.insert(0, nbformat.v4.new_markdown_cell(expected))
 
     # Save updated notebook
@@ -111,7 +111,7 @@ def scan_target_dirs(base_dir, target_dirs):
     for target_dir in target_dirs:
         full_target_dir = os.path.join(base_dir, target_dir)
         if not os.path.isdir(full_target_dir):
-            print(f"⚠️ Skipping missing directory: {full_target_dir}")
+            print(f"Skipping missing directory: {full_target_dir}")
             continue
         for root, _, files in os.walk(full_target_dir):
             for file in files:

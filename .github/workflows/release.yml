@@ -16,7 +16,7 @@ name: Release
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v*.*.*"
 
 permissions:
   contents: read
@@ -55,7 +55,8 @@ jobs:
     name: Publish to PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi       # requires manual approval in GitHub settings
+    environment:
+      name: pypi # requires manual approval in GitHub settings
     permissions:
       id-token: write       # OIDC — no API tokens stored as secrets
 

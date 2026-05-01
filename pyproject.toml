@@ -58,3 +58,14 @@ max-line-length = 90
 [tool.pytest.ini_options]
 addopts = "--durations=10"
 doctest_optionflags = "ELLIPSIS NORMALIZE_WHITESPACE"
+
+[tool.mypy]
+python_version = "3.12"
+
+[[tool.mypy.overrides]]
+module = [
+    "pandas.*",
+    "scipy.*",
+    "numpy_financial.*",
+]
+ignore_missing_imports = true

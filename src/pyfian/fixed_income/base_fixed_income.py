@@ -470,7 +470,7 @@ class BaseFixedIncomeInstrument(ABC):
         pass
 
     @abstractmethod
-    def plot_cash_flows(self, *args, **kwargs) -> None:  # pragma: no cover
+    def plot_cash_flows(self, *args, **kwargs) -> plt.Figure:  # pragma: no cover
         pass
 
     @abstractmethod
@@ -681,7 +681,7 @@ class BaseFixedIncomeInstrumentWithYieldToMaturity(BaseFixedIncomeInstrument, AB
         day_count_convention: str | DayCountBase | None = None,
         following_coupons_day_count: str | DayCountBase | None = None,
         yield_calculation_convention: str | None = None,
-    ) -> None:
+    ) -> plt.Figure:
         """
         Visualize the cash flow schedule using matplotlib as stacked bars.
 
@@ -751,6 +751,7 @@ class BaseFixedIncomeInstrumentWithYieldToMaturity(BaseFixedIncomeInstrument, AB
         plt.legend()
         plt.tight_layout()
         plt.show()
+        return plt.gcf()
 
     def dv01(
         self,

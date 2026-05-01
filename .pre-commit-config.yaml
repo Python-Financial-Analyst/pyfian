@@ -40,6 +40,21 @@ repos:
         pass_filenames: false
         types: [python]
 
+      - id: mypy-full
+        name: Mypy (full check)
+        entry: poetry run mypy src/pyfian
+        language: system
+        pass_filenames: false
+        env:
+          MYPYPATH: src
+
+      - id: pytest
+        name: Run tests (unit)
+        entry: poetry run pytest -q
+        language: system
+        pass_filenames: false
+        types: [python]
+
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v4.4.0
     hooks:
