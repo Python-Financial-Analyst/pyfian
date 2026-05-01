@@ -73,6 +73,7 @@ docs/_build/
 docs/jupyter_execute/
 docs/.jupyter_cache
 docs/source/notebooks
+docs/source/autoapi/
 
 # PyBuilder
 .pybuilder/

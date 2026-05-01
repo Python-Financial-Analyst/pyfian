@@ -16,6 +16,7 @@ import pyfian
 # ---------------------------------------------------------------------------
 _source_dir = os.path.dirname(os.path.abspath(__file__))
 _notebooks_link = os.path.join(_source_dir, "notebooks")
+# Using absolute paths to ensure reliability across different build environments
 _notebooks_target = os.path.abspath(os.path.join(_source_dir, "..", "..", "notebooks"))
 
 if not os.path.exists(_notebooks_link):
@@ -48,11 +49,10 @@ extensions = [
     "sphinx.ext.doctest",
 ]
 
-mathjax_config = {
-    "tex2jax": {
+mathjax3_config = {
+    "tex": {
         "inlineMath": [["$", "$"], ["\\(", "\\)"]],
         "displayMath": [["$$", "$$"], ["\\[", "\\]"]],
-        "processEscapes": True,
     }
 }
 myst_enable_extensions = [
@@ -60,21 +60,45 @@ myst_enable_extensions = [
     "amsmath",
 ]
 
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# Combined exclude_patterns to prevent the second definition from overwriting the first
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
 
+# -- AutoAPI configuration ---------------------------------------------------
 autoapi_dirs = ["../../src/pyfian"]
 autodoc_inherit_docstrings = True
+autoapi_keep_files = True
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "show-module-summary",
+    "special-members",
+    # "imported-members" excluded: avoids naming conflicts between imported symbols
+    # and submodule names (e.g., function irr vs module pyfian.time_value.irr)
+]
+
+# -- Napoleon & Autodoc settings ---------------------------------------------
+napoleon_use_ivar = True
+autosummary_generate = False
+napoleon_custom_sections = [("Methods", "notes")]
 
 autodoc_default_options = {
     "members": True,
-    "inherited-members": True,
 }
 
 templates_path = ["_templates"]
-exclude_patterns = []
 
+# -- Warning Suppression -----------------------------------------------------
+suppress_warnings = [
+    "py.duplicate_object",  # Napoleon Attributes section + autoapi introspection both document attrs
+    "ref.python",  # re-exported symbols appear under two qualified names
+    "myst.xref_missing",  # README links to project root files not in Sphinx source tree
+    "docutils",  # RST formatting issues in math-heavy docstrings
+]
 
 nb_execution_mode = "cache"
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 

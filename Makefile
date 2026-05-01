@@ -38,7 +38,7 @@ endif
 # Build documentation
 # Assumes Sphinx is set up in docs/
 docs:
-	poetry run sphinx-build docs/source docs/_build
+	poetry run sphinx-build -W docs/source docs/_build
 
 test:
 	poetry run pytest

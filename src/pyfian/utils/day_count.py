@@ -19,7 +19,7 @@ The difference between ActualActualISDA and other ActualActual conventions is th
 The numerator methods calculate the number of days between two dates according to the specific day count convention, while the denominator methods return a fixed value (e.g., 360 for 30/360) or calculate the year length based on actual days.
 
 Supported Day Count Conventions
-------------------------------
+--------------------------------
 
 * 30/360 (Bond Basis):
     - Assumes each month has 30 days and each year has 360 days.

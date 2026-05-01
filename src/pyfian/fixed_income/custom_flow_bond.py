@@ -1,6 +1,6 @@
 """
 Module: custom_flow_bond
-------
+------------------------
 
 Provides the CustomFlowBond class for modeling fixed income instruments with user-defined amortization and coupon flows.
 Coupons can be specified as explicit values or as percentages of the remaining notional for each period.
