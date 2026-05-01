@@ -7,11 +7,6 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.20.2
-    hooks:
-      - id: mypy
-
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.2
     hooks:
@@ -28,8 +23,10 @@ repos:
     hooks:
       - id: add-colab-badges
         name: Add Colab Badges to Notebooks
-        entry: poetry run python add_colab_badge.py
-        language: system
+        entry: python add_colab_badge.py
+        language: python
+        additional_dependencies:
+          - nbformat
         pass_filenames: false
         files: ^notebooks/.*\.ipynb$
 

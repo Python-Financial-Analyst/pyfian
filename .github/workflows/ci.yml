@@ -90,7 +90,7 @@ jobs:
           poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with dev --no-interaction
 
       - name: Run tests with coverage
         run: poetry run pytest --cov=pyfian --cov-report=xml --cov-report=term-missing
@@ -130,7 +130,7 @@ jobs:
           poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with dev --no-interaction
 
       - name: Run doctests
         run: poetry run pytest --doctest-modules src/pyfian
@@ -162,7 +162,7 @@ jobs:
           poetry config virtualenvs.in-project true
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with dev --no-interaction
 
       - name: Build Sphinx docs
         run: poetry run sphinx-build -W docs/source docs/_build

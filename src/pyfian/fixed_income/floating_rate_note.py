@@ -257,36 +257,65 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
         """
         return self._yield_to_maturity
 
-    def _should_calculate(self, settlement_date, ref_rate_curve, current_ref_rate):
+    def _should_calculate(
+        self,
+        settlement_date: str | pd.Timestamp | None,
+        ref_rate_curve: YieldCurveBase | None,
+        current_ref_rate: float | None,
+    ) -> tuple[bool, YieldCurveBase | None, float | None]:
         """
         Helper to determine if calculation should proceed based on settlement_date, ref_rate_curve, and current_ref_rate.
-        Returns (calculate: bool, ref_rate_curve, current_ref_rate)
-        """
-        calculate = True
 
-        if settlement_date is None:
-            settlement_date = self._settlement_date
-        if settlement_date is None:
-            calculate = False
-        if calculate and ref_rate_curve is None:
+        Parameters
+        ----------
+        settlement_date : str | pd.Timestamp | None
+            The settlement date to evaluate.
+        ref_rate_curve : YieldCurveBase | None
+            Reference rate curve to use for calculations (may be None).
+        current_ref_rate : float | None
+            Current reference rate (may be None).
+
+        Returns
+        -------
+        tuple[bool, YieldCurveBase | None, float | None]
+            A tuple of (calculate_flag, possibly_resolved_ref_rate_curve, possibly_resolved_current_ref_rate).
+        """
+        # Resolve settlement date (prefer explicit, fall back to stored)
+        resolved_settlement = (
+            pd.to_datetime(settlement_date)
+            if settlement_date is not None
+            else self._settlement_date
+        )
+
+        # If we don't have a settlement date, cannot calculate
+        if resolved_settlement is None:
+            return False, ref_rate_curve, current_ref_rate
+
+        # Resolve reference curve if not provided
+        if ref_rate_curve is None:
             if self.ref_rate_curve is None:
-                calculate = False
-            else:
-                ref_rate_curve = self.ref_rate_curve
-        if calculate and (pd.Timestamp(settlement_date) != ref_rate_curve.curve_date):
-            calculate = False
-        if calculate and current_ref_rate is None:
+                return False, None, current_ref_rate
+            ref_rate_curve = self.ref_rate_curve
+
+        # Settlement date must match curve date
+        if pd.Timestamp(resolved_settlement) != ref_rate_curve.curve_date:
+            return False, ref_rate_curve, current_ref_rate
+
+        # Resolve current reference rate: if not provided, try stored value
+        if current_ref_rate is None:
             if self.current_ref_rate is None:
-                if (
-                    self.issue_dt == pd.Timestamp(settlement_date)
-                    or pd.Timestamp(settlement_date) in self.spread_flow
+                # Only allow calculation without an explicit current rate when
+                # the settlement date equals the issue date or there is a spread
+                # entry for that settlement date.
+                if not (
+                    self.issue_dt == pd.Timestamp(resolved_settlement)
+                    or pd.Timestamp(resolved_settlement) in self.spread_flow
                 ):
-                    calculate = True
-                else:
-                    calculate = False
+                    return False, ref_rate_curve, current_ref_rate
             else:
                 current_ref_rate = self.current_ref_rate
-        return calculate, ref_rate_curve, current_ref_rate
+
+        return True, ref_rate_curve, current_ref_rate
 
     def get_discount_margin(self) -> float | None:
         """
@@ -440,6 +469,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
                 settlement_date, ref_rate_curve, current_ref_rate
             )
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 self._price = self._price_from_discount_margin_and_clean_parameters(
                     discount_margin=discount_margin,
                     settlement_date=settlement_date,
@@ -531,6 +561,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
                 settlement_date, ref_rate_curve, current_ref_rate
             )
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 self._discount_margin = (
                     self._get_spread_from_price(
                         price=price,
@@ -1235,7 +1266,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
         )
 
         # Make objective function to calculate present value of each cash flow
-        def _price_difference(z_spread):
+        def _price_difference(z_spread: float) -> float:
             return sum(
                 {
                     d: ref_rate_curve.discount_date(d, z_spread) * value
@@ -1565,7 +1596,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
 
         future_dates = [
             d
-            for d, coupon in self.coupon_flow.items()
+            for d, _ in self.coupon_flow.items()
             if d >= settlement_date + pd.offsets.BDay(self.record_date_t_minus)
         ]
         return min(future_dates) if future_dates else None
@@ -2101,7 +2132,9 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
             price_minus_epsilon = 1 / (1 + (ytm - epsilon) / time_adjustment) ** (
                 t * time_adjustment
             )
-
+        assert price != 0 and price is not None, (
+            "Price cannot be zero for effective duration calculation."
+        )
         effective_duration = (
             -1 * (price_plus_epsilon - price_minus_epsilon) / (2 * epsilon * price)
         )
@@ -2206,6 +2239,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
 
             # Calculate effective duration using a small epsilon
             epsilon = 0.0001
+            assert ref_rate_curve is not None  # for type checker
             price_plus_epsilon = self._price_from_discount_margin_and_clean_parameters(
                 discount_margin + epsilon,
                 settlement_date,
@@ -2333,6 +2367,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
 
             # Calculate effective duration using a small epsilon
             epsilon = 0.1
+            assert ref_rate_curve is not None  # for type checker
             price_plus_epsilon = self._price_from_discount_margin_and_clean_parameters(
                 discount_margin + epsilon,
                 settlement_date,
@@ -2575,6 +2610,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
 
             # Calculate effect of a basis point change in discount margin on price
             epsilon = 1
+            assert ref_rate_curve is not None  # for type checker
             price_plus_epsilon = self._price_from_discount_margin_and_clean_parameters(
                 discount_margin + epsilon,
                 settlement_date,
@@ -2643,6 +2679,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
             )
 
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 price_calc = self._price_from_discount_margin_and_clean_parameters(
                     discount_margin=discount_margin,
                     settlement_date=settlement_date,
@@ -2683,6 +2720,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
                 settlement_date, ref_rate_curve, current_ref_rate
             )
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 price_calc = self._price_from_discount_margin_and_clean_parameters(
                     discount_margin=discount_margin,
                     settlement_date=settlement_date,
@@ -2723,6 +2761,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
                     settlement_date, ref_rate_curve, current_ref_rate
                 )
                 if price is None and discount_margin is not None and calculate:
+                    assert ref_rate_curve is not None  # for type checker
                     price = self._price_from_discount_margin_and_clean_parameters(
                         discount_margin=discount_margin,
                         settlement_date=settlement_date,
@@ -2808,6 +2847,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
             )
 
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 price_calc = self._price_from_discount_margin_and_clean_parameters(
                     discount_margin=discount_margin,
                     settlement_date=settlement_date,
@@ -2837,6 +2877,7 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
                 settlement_date, ref_rate_curve, current_ref_rate
             )
             if calculate:
+                assert ref_rate_curve is not None  # for type checker
                 price_calc = self._price_from_discount_margin_and_clean_parameters(
                     discount_margin=discount_margin,
                     settlement_date=settlement_date,
@@ -3267,6 +3308,9 @@ class FloatingRateNote(BaseFixedIncomeInstrument):
             price_minus_epsilon = 1 / (1 + (ytm - epsilon) / time_adjustment) ** (
                 t * time_adjustment
             )
+        assert price != 0 and price is not None, (
+            "Price cannot be zero for effective duration calculation."
+        )
 
         expected_convexity = (price_plus_epsilon + price_minus_epsilon - 2 * price) / (
             epsilon**2 * price

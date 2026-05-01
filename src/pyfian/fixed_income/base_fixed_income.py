@@ -93,7 +93,7 @@ class BaseFixedIncomeInstrument(ABC):
             if dt < self.issue_dt:
                 raise ValueError("Settlement date cannot be before issue date.")
             return dt
-        if self._settlement_date is not None:
+        if self._settlement_date:
             return pd.Timestamp(self._settlement_date)
         return self.issue_dt
 
@@ -478,7 +478,9 @@ class BaseFixedIncomeInstrument(ABC):
         pass
 
     @abstractmethod
-    def set_settlement_date(self, *args, **kwargs) -> float:  # pragma: no cover
+    def set_settlement_date(
+        self, *args, **kwargs
+    ) -> pd.Timestamp | None:  # pragma: no cover
         pass
 
     @abstractmethod
@@ -850,7 +852,7 @@ class BaseFixedIncomeInstrumentWithYieldToMaturity(BaseFixedIncomeInstrument, AB
         day_count_convention: str | DayCountBase | None = None,
         following_coupons_day_count: str | DayCountBase | None = None,
         yield_calculation_convention: str | None = None,
-    ) -> pd.Timestamp:
+    ) -> pd.Timestamp | None:
         """
         Set the default settlement date for the bond.
         If reset_yield_to_maturity is True, resets the yield to maturity and bond price.
@@ -872,7 +874,7 @@ class BaseFixedIncomeInstrumentWithYieldToMaturity(BaseFixedIncomeInstrument, AB
 
         Returns
         -------
-        pd.Timestamp
+        pd.Timestamp | None
             The updated settlement date.
 
         Raises
