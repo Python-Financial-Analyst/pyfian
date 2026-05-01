@@ -1,0 +1,96 @@
+# Release workflow — triggered by pushing a version tag (e.g. v0.2.0).
+#
+# Prerequisites (one-time setup):
+#   1. On PyPI: create a "pending trusted publisher" for this repo
+#      (publisher = GitHub Actions, repo = Python-Financial-Analyst/pyfian,
+#       workflow = release.yml, environment = pypi).
+#   2. On GitHub: create an environment called "pypi" with a protection rule
+#      requiring a manual approval from a maintainer.
+#
+# Usage:
+#   poetry run bumpver update --patch   # or --minor / --major
+#   git push origin main --tags
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: read
+
+jobs:
+  # ── 1. Build sdist + wheel ─────────────────────────────────────────────────
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history so bumpver/changelog tools work
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          pip install --upgrade pip
+          pip install poetry==2.1.3
+
+      - name: Build sdist and wheel
+        run: poetry build
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # ── 2. Publish to PyPI via OIDC trusted publishing ─────────────────────────
+  publish-pypi:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi       # requires manual approval in GitHub settings
+    permissions:
+      id-token: write       # OIDC — no API tokens stored as secrets
+
+    steps:
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  # ── 3. Create GitHub Release with auto-generated notes ─────────────────────
+  github-release:
+    name: Create GitHub Release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true   # uses PR titles / commit msgs
+          make_latest: true

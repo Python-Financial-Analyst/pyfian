@@ -1,0 +1,48 @@
+
+repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.12.7
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.17.0
+    hooks:
+      - id: mypy
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.20.0
+    hooks:
+      - id: pyupgrade
+        args: ["--py39-plus"]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        exclude: ".*\\.ipynb$"
+
+  - repo: local
+    hooks:
+      - id: add-colab-badges
+        name: Add Colab Badges to Notebooks
+        entry: poetry run python add_colab_badge.py
+        language: system
+        pass_filenames: false
+        files: ^notebooks/.*\.ipynb$
+
+      - id: doctest
+        name: Run doctests (modules)
+        entry: poetry run pytest --doctest-modules src/pyfian
+        language: system
+        pass_filenames: false
+        types: [python]
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert]
