@@ -61,7 +61,7 @@ doctest:
 	poetry run sphinx-build -b doctest docs/source docs/_build/doctest
 
 doctest-file:
-    $(if $(FILE),,$(error Usage: make doctest-file FILE=path/to/file1.py))
-    poetry run python -m doctest $(FILE)
+	$(if $(FILE),,$(error Usage: make doctest-file FILE=path/to/file1.py))
+	poetry run python -m doctest $(FILE)
 
 
