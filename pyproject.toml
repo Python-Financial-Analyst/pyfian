@@ -34,7 +34,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0"
+pytest = ">=8,<10"
 ipykernel = ">=6.29.5,<8.0.0"
 nbconvert = "^7.16.6"
 ruff = "^0.12.3"
