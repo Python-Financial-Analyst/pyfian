@@ -50,7 +50,7 @@ sphinx-rtd-theme = "^3.0.2"
 pre-commit = "^4.5.0"
 bumpver = "^2025.1131"
 types-python-dateutil = "^2.9.0.20250708"
-mypy = "^1.20.0"
+mypy = ">=1.20,<3.0"
 
 
 [tool.flake8]
